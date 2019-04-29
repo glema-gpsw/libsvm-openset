@@ -2623,7 +2623,7 @@ svm_model *svm_train_wsvm_onevset_binary(svm_model* model, const svm_problem *pr
           sub_prob.y[k] = nlabel;
           ncnt++;
       }      
-      fprintf(stderr,"Training binary 1-vs-rest WSVM for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);      
+      //fprintf(stderr,"Training binary 1-vs-rest WSVM for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);      
       tmodels[i] = svm_train_binary_pairs(tmodels[i],&sub_prob,param);
       model->rho[i] = tmodels[i]->rho[0];
       /* now analyze subproblem for openset adjustments, saving resulting alpha and omega  */ 
@@ -2841,9 +2841,9 @@ svm_model *svm_train_onevset_binary(svm_model* model, const svm_problem *prob, c
           sub_prob.y[k] = nlabel;
           ncnt++;
       }
-      if(model->param.vfile)          
-        fprintf(model->param.vfile,"Trainingg binary 1-vs-set for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);      
-      fprintf(stderr,"Training binary 1-vs-set for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);      
+      if(model->param.vfile)
+         fprintf(model->param.vfile,"Trainingg binary 1-vs-set for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);
+      // fprintf(stderr,"Training binary 1-vs-set for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);
       tmodels[i] = svm_train_binary_pairs(tmodels[i],&sub_prob,param);
       model->rho[i] = tmodels[i]->rho[0];
       /* now analyze subproblem for openset adjustments, saving resulting alpha and omega  */ 
@@ -3031,8 +3031,8 @@ svm_model *svm_train_pi_svm_onevset_binary(svm_model* model, const svm_problem *
             ncnt++;
         }
         if(model->param.vfile)
-            fprintf(model->param.vfile,"Trainingg binary 1-vs-set for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);
-        fprintf(stderr,"Training binary 1-vs-set for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);
+             fprintf(model->param.vfile,"Training binary 1-vs-set for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);
+        // fprintf(stderr,"Training binary 1-vs-set for class %d with %d pos and %d neg examples\n",plabel,pcnt,ncnt);
         tmodels[i] = svm_train_binary_pairs(tmodels[i],&sub_prob,param);
         model->rho[i] = tmodels[i]->rho[0];
         /* now analyze subproblem for openset adjustments, saving resulting alpha and omega  */
@@ -3053,8 +3053,8 @@ svm_model *svm_train_pi_svm_onevset_binary(svm_model* model, const svm_problem *
             sub_nd[q].value = dec_values[0];
         }
         int rvalue = model->MRpos_one_vs_all[weibull_model_count].FitSVM(sub_nd, sub_prob.l, plabel, true, MetaRecognition::positive_model,top_score_pos );//positive tail w.r.t. positive class
-        if(rvalue!=1)
-            printf("fit weibull positive %d\n",rvalue);
+        // if(rvalue!=1)
+        //     printf("fit weibull positive %d\n",rvalue);
         //model->MRpos_one_vs_all[weibull_model_count].FitSVM(sub_nd, sub_prob.l, plabel, true, MetaRecognition::positive_model,top_score_pos );//positive tail w.r.t. positive class
         if(0) fprintf(stderr,"%lf %lf %lf %lf %lf %lf\n",
                       model->MRpos_one_vs_all[weibull_model_count].W_score(2.0),
@@ -3670,6 +3670,7 @@ double svm_predict_values_extended(const svm_model *model, const svm_node *x,
             double dist = sum - rho;
             dec_values[j] = dist;
             double pos_class_pos_score = model->MRpos_one_vs_all[j].W_score(dec_values[j]);//positive tail w.r.t. positive class
+            // printf("dist: %.4f, pos_class_pos_score: %.4f\n", dist, pos_class_pos_score);
             double tscore = pos_class_pos_score;
             if(scores){
                 scores[j][0] =  tscore;
@@ -3677,12 +3678,16 @@ double svm_predict_values_extended(const svm_model *model, const svm_node *x,
         }
         double max_prob=scores[0][0];int max_prob_index=0;
         for(int jj=0; jj< model->openset_dim; jj++){
+            // printf("label: %d, prob: %.4f\n", model->label[jj], scores[jj][0]);
             if(scores[jj][0] > max_prob){
                 max_prob = scores[jj][0];
                 max_prob_index = jj;
             }
         }
-        return model->label[max_prob_index];
+        if (max_prob >= model->param.openset_min_probability)
+            return model->label[max_prob_index];
+        else
+            return model->param.rejectedID; 
     }
 	else  if(model->param.svm_type == OPENSET_PAIR ){
         int i;
@@ -4428,10 +4433,10 @@ svm_model *svm_load_model(const char *model_file_name)
 
 		p = strtok(line, " \t");
 		model->sv_coef[0][i] = strtod(p,&endptr);
-		for(int k=1;k<m;k++){
-			p = strtok(NULL, " \t");
-			model->sv_coef[k][i] = strtod(p,&endptr);
-		}
+        for(int k=1;k<m;k++){
+            p = strtok(NULL, " \t");
+            model->sv_coef[k][i] = strtod(p,&endptr);
+        }
 
 		while(1){
 			idx = strtok(NULL, ":");
@@ -4441,13 +4446,11 @@ svm_model *svm_load_model(const char *model_file_name)
 				break;
 			x_space[j].index = (int) strtol(idx,&endptr,10);
 			x_space[j].value = strtod(val,&endptr);
-
 			++j;
 		}
 		x_space[j++].index = -1;
 	}
 	free(line);
-
 	if (ferror(fp) != 0 || fclose(fp) != 0)
 		return NULL;
 

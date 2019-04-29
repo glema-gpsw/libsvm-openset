@@ -1,5 +1,5 @@
 #LIBMR_DIR should be absolute path, not relative (no ..)                                                                                                          
-LIBMR_DIR = /Users/macuser/lalitphd/WSVM/libsvm-openset/libMR
+#LIBMR_DIR = /home/glema/work/pi-svm/libMR
 
 ifeq ($(OS),Windows_NT)
     CFLAGS += -D WIN32
@@ -33,7 +33,7 @@ CFLAGS += -Wall  -g   -I $(LIBMR_DIR)/libMR
 CFLAGS += -O2 -fPIC
 SHVER = 2
 
-all: svm-train svm-predict svm-scale $(LIBMR_LIB)
+all: svm-train svm-predict svm-predict-debug svm-scale $(LIBMR_LIB)
 
 $(LIBMR_LIB): $(LIBMR_DIR)/libMR/MetaRecognition.h $(LIBMR_DIR)/libMR/MetaRecognition.cpp
 	mkdir -p $(LIBMR_DIR)/libMR/build
@@ -46,6 +46,8 @@ lib: svm.o $(LIBMR_LIB)
 
 svm-predict: svm-predict.cpp svm.o $(LIBMR_LIB)
 	$(CXX) $(CFLAGS) svm-predict.cpp svm.o $(LIBMR_LIB)  -o svm-predict -lm
+svm-predict: svm-predict-debug.cpp svm.o $(LIBMR_LIB)
+	$(CXX) $(CFLAGS) svm-predict-debug.cpp svm.o $(LIBMR_LIB)  -o svm-predict-debug -lm
 svm-train: svm-train.cpp svm.o $(LIBMR_LIB)
 	$(CXX) $(CFLAGS) svm-train.cpp svm.o $(LIBMR_LIB) -o svm-train -lm
 svm-scale: svm-scale.c $(LIBMR_LIB)

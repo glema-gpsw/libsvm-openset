@@ -191,7 +191,9 @@ void predict(FILE *input, FILE *output){
                 if(scores[jj][0] > max_prob){
                     max_prob = scores[jj][0];
                 }
+                fprintf(output, "%d:%g, ", model->label[jj], scores[jj][0]); 
             }
+            fprintf(output, "\n");
             bool known_class=false;
             for(int jj=0; jj< model->openset_dim; jj++){
                 if(target_label == model->label[jj])
@@ -209,7 +211,7 @@ void predict(FILE *input, FILE *output){
                 else
                     falsepos++;
             }
-            fprintf(output,"%g:%.3f, ", predict_label, max_prob);
+            //fprintf(output,"%g:%.3f, ", predict_label, max_prob);
             //cleanup scores and votes
             for(int v=0; v<model->nr_class; v++)
                 if(scores[v] != NULL)
